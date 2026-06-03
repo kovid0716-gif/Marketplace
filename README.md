@@ -46,3 +46,28 @@
 ├── docker-compose.yml       # Конфигурация Docker контейнеров (App + DB)
 ├── Dockerfile.txt           # Инструкция сборки Docker-образа приложения
 └── package.json             # Зависимости и скрипты проекта
+
+🏁 Быстрый запуск (Через Docker)
+Проект полностью контейнеризирован, поэтому для его запуска вам понадобятся только установленные Docker и Docker Compose.
+
+1. Клонирование репозитория
+Bash
+git clone [https://github.com/kovid0716-gif/Marketplace.git](https://github.com/kovid0716-gif/Marketplace.git)
+cd Marketplace
+2. Настройка переменных окружения
+Создайте файл .env в корневом каталоге и заполните его по следующему шаблону:
+
+Фрагмент кода
+PORT=3001
+DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/marketplace_db?schema=public"
+JWT_SECRET="YOUR_SUPER_SECRET_KEY_999"
+3. Запуск инфраструктуры
+Запустите сборку приложения и контейнер базы данных PostgreSQL одной командой:
+
+Bash
+docker-compose up --build -d
+4. Применение миграций БД
+После того как контейнеры успешно поднимутся, примените миграции Prisma для генерации таблиц в PostgreSQL:
+
+Bash
+npx prisma migrate deploy
