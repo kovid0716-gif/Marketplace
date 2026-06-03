@@ -1,0 +1,54 @@
+// 1. Настройки генератора типов для TypeScript
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 2. Блок подключения к твоей базе PostgreSQL
+datasource db {
+  provider = "postgresql"
+}
+
+// 3. Твои обновленные модели таблиц
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  role      String    @default("USER") // USER или SELLER
+  products  Product[] // Товары, созданные продавцом
+  orders    Order[]   // Заказы пользователя
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id          Int         @id @default(autoincrement())
+  title       String
+  description String
+  price       Float
+  imageUrl    String?
+  ownerId     Int
+  owner       User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[] // Связь с позициями в заказах
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Order {
+  id         Int         @id @default(autoincrement())
+  userId     Int
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalPrice Float       // Общая стоимость всего заказа
+  items      OrderItem[] // Список товаров в этом заказе
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int     // Количество товара
+  price     Float   // Фиксируем цену на момент покупки
+}

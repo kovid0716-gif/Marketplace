@@ -1,0 +1,26 @@
+# Используем стабильную версию Node.js
+FROM node:20-alpine
+
+# Рабочая директория внутри контейнера
+WORKDIR /app
+
+# Копируем файлы зависимостей
+COPY package*.json ./
+
+# Устанавливаем зависимости
+RUN npm install
+
+# Копируем весь код проекта
+COPY . .
+
+# Генерируем клиент Prisma под окружение контейнера
+RUN npx prisma generate
+
+# Собираем production-билд NestJS
+RUN npm run build
+
+# Открываем порт бэкенда
+EXPOSE 3001
+
+# Запуск приложения
+CMD ["npm", "run", "start:prod"]
