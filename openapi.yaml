@@ -1,0 +1,218 @@
+openapi: 3.0.3
+info:
+  title: Marketplace API
+  version: 1.0.0
+  description: Производственная спецификация API бэкенда маркетплейса на NestJS с поддержкой RBAC (ролевой модели) и JWT-авторизацией.
+servers:
+  - url: http://localhost:3001
+    description: Локальный сервер разработки
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Auth (Авторизация)
+      summary: Регистрация нового пользователя
+      description: Создание аккаунта с явным указанием роли (USER или SELLER).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - role
+              properties:
+                email:
+                  type: string
+                  example: seller@test.com
+                password:
+                  type: string
+                  example: password123
+                role:
+                  type: string
+                  enum: [USER, SELLER]
+                  example: SELLER
+      responses:
+        '201':
+          description: Пользователь успешно зарегистрирован
+        '400':
+          description: Ошибка валидации или пользователь уже существует
+
+  /auth/login:
+    post:
+      tags:
+        - Auth (Авторизация)
+      summary: Аутентификация пользователя (Вход)
+      description: Проверка учётных данных и выдача сессионного JWT-токена.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  example: seller@test.com
+                password:
+                  type: string
+                  example: password123
+      responses:
+        '200':
+          description: Успешный вход. Возвращает access_token и профиль пользователя.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      email:
+                        type: string
+                      role:
+                        type: string
+
+  /products:
+    get:
+      tags:
+        - Products (Товары)
+      summary: Получить список всех товаров
+      description: Доступно всем авторизованным и неавторизованным пользователям.
+      responses:
+        '200':
+          description: Массив доступных товаров успешно получен
+    post:
+      tags:
+        - Products (Товары)
+      summary: Создать новый товар
+      description: Доступно исключительно пользователям с ролью SELLER. Требуется Bearer JWT.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - price
+              properties:
+                title:
+                  type: string
+                  example: Игровой монитор 27'
+                description:
+                  type: string
+                  example: 144Hz, IPS матрица
+                price:
+                  type: number
+                  example: 25000
+      responses:
+        '201':
+          description: Товар успешно создан
+        '403':
+          description: Отказано в доступе (недостаточно прав/роли)
+
+  /products/{id}:
+    get:
+      tags:
+        - Products (Товары)
+      summary: Получить информацию о товаре по его ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Данные товара получены
+        '404':
+          description: Товар не найден
+    patch:
+      tags:
+        - Products (Товары)
+      summary: Обновить данные товара
+      description: Изменение параметров товара. Разрешено только создателю (владельцу) товара.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Товар успешно обновлен
+    delete:
+      tags:
+        - Products (Товары)
+      summary: Удалить товар из системы
+      description: Полное удаление. Доступно только владельцу товара.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Товар успешно удален
+
+  /orders:
+    post:
+      tags:
+        - Orders (Заказы)
+      summary: Оформить новый заказ
+      description: Создание заказа на основе выбранных ID продуктов. Доступно только для роли USER.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productIds
+              properties:
+                productIds:
+                  type: array
+                  items:
+                    type: string
+                  example: ["uuid-товара-1", "uuid-товара-2"]
+      responses:
+        '201':
+          description: Заказ успешно оформлен
+
+  /orders/my-orders:
+    get:
+      tags:
+        - Orders (Заказы)
+      summary: Получить историю личных заказов
+      description: Возвращает список всех заказов текущего авторизованного покупателя.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список личных заказов успешно загружен
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
